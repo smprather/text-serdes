@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from dailycrypt.codec import CodecError, decrypt_text, encrypt_bytes
+from text_serdes.codec import CodecError, decrypt_text, encrypt_bytes
 
 
 TODAY = date(2026, 6, 1)
@@ -38,7 +38,7 @@ def test_malformed_input_fails() -> None:
 def test_cli_round_trip_from_stdin() -> None:
     plaintext = b"from stdin\nwith newline\n"
     encoded = subprocess.run(
-        [sys.executable, "-m", "dailycrypt.cli"],
+        [sys.executable, "-m", "text_serdes.cli"],
         input=plaintext,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -79,4 +79,3 @@ def test_cli_file_input(tmp_path: Path) -> None:
     ).stdout
 
     assert decoded == b"file bytes\n"
-

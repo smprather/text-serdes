@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-This is a small Python CLI project. Runtime code lives in `dailycrypt/`, with command entry points in `dailycrypt/cli.py` and encode/decode logic in `dailycrypt/codec.py`. Tests live in `tests/`. Package metadata, dependencies, console scripts, and pytest discovery settings are in `pyproject.toml`.
+This is a small Python CLI project. Runtime code lives in `text_serdes/`, with command entry points in `text_serdes/cli.py` and encode/decode logic in `text_serdes/codec.py`. Tests live in `tests/`. Package metadata, dependencies, console scripts, and pytest discovery settings are in `pyproject.toml`.
 
 ## Build, Test, and Development Commands
 
