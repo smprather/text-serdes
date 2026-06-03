@@ -59,35 +59,7 @@ Current payloads use:
 
 Older `DC2` shoco and `DC1` zlib payloads still decode, so same-day strings produced before compressor changes are not stranded.
 
-Encode:
-
-```mermaid
-flowchart LR
-    A["bytes"] --> B["shoco"]
-    A --> C["zlib"]
-    B --> D["min"]
-    C --> D
-    D --> E["S/Z"]
-    E --> F["AES-GCM"]
-    F --> G["DC3 + nonce"]
-    G --> H["Base91"]
-    H --> I["text"]
-```
-
-Decode:
-
-```mermaid
-flowchart LR
-    J["text"] --> K["Base91"]
-    K --> L["DC3 + nonce"]
-    L --> M["AES-GCM"]
-    M --> N["S/Z"]
-    N --> O{"method"}
-    O -->|"S"| P["shoco"]
-    O -->|"Z"| Q["zlib"]
-    P --> R["bytes"]
-    Q --> R
-```
+![text-serdes encode and decode flow](docs/codec-flow.svg)
 
 ## Security Model
 
