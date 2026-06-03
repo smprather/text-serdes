@@ -61,29 +61,28 @@ Older `DC2` shoco and `DC1` zlib payloads still decode, so same-day strings prod
 
 ```mermaid
 flowchart TD
-    subgraph Encode
-        A["input bytes"] --> B["compress with shoco"]
-        A --> C["compress with zlib"]
-        B --> D["pick smaller result"]
-        C --> D
-        D --> E["prepend encrypted method byte: S or Z"]
-        E --> F["AES-GCM encrypt with date key and random nonce"]
-        F --> G["prepend DC3 magic and nonce"]
-        G --> H["Base91 encode"]
-        H --> I["copyable output text"]
-    end
+    A["input bytes"] --> B["compress with shoco"]
+    A --> C["compress with zlib"]
+    B --> D["pick smaller result"]
+    C --> D
+    D --> E["prepend encrypted method byte: S or Z"]
+    E --> F["AES-GCM encrypt with date key and random nonce"]
+    F --> G["prepend DC3 magic and nonce"]
+    G --> H["Base91 encode"]
+    H --> I["copyable output text"]
+```
 
-    subgraph Decode
-        J["encoded input text"] --> K["Base91 decode"]
-        K --> L["read magic, nonce, ciphertext"]
-        L --> M["AES-GCM decrypt with date key"]
-        M --> N["read method byte"]
-        N --> O{"method"}
-        O -->|"S"| P["shoco decompress"]
-        O -->|"Z"| Q["zlib decompress"]
-        P --> R["original bytes"]
-        Q --> R
-    end
+```mermaid
+flowchart TD
+    J["encoded input text"] --> K["Base91 decode"]
+    K --> L["read magic, nonce, ciphertext"]
+    L --> M["AES-GCM decrypt with date key"]
+    M --> N["read method byte"]
+    N --> O{"method"}
+    O -->|"S"| P["shoco decompress"]
+    O -->|"Z"| Q["zlib decompress"]
+    P --> R["original bytes"]
+    Q --> R
 ```
 
 ## Security Model
