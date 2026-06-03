@@ -21,10 +21,8 @@
 
   <text class="title" x="410" y="40" text-anchor="middle">Encode</text>
   <rect class="box" x="30" y="62" width="96" height="42"/>
-  <text class="label" x="78" y="79" text-anchor="middle">
-    <tspan x="78" dy="0">string/</tspan>
-    <tspan x="78" dy="17">file</tspan>
-  </text>
+  <text class="label" x="78" y="79" text-anchor="middle">string/</text>
+  <text class="label" x="78" y="96" text-anchor="middle">file</text>
   <rect class="codec" x="186" y="62" width="96" height="42"/>
   <text class="label" x="234" y="88" text-anchor="middle">zlib</text>
   <rect class="crypto" x="342" y="62" width="96" height="42"/>
@@ -49,10 +47,8 @@
   <rect class="codec" x="498" y="182" width="96" height="42"/>
   <text class="label" x="546" y="208" text-anchor="middle">zlib</text>
   <rect class="box" x="654" y="182" width="96" height="42"/>
-  <text class="label" x="702" y="199" text-anchor="middle">
-    <tspan x="702" dy="0">stdout/</tspan>
-    <tspan x="702" dy="17">file</tspan>
-  </text>
+  <text class="label" x="702" y="199" text-anchor="middle">stdout/</text>
+  <text class="label" x="702" y="216" text-anchor="middle">file</text>
 
   <path class="arrow" d="M126 203 H186"/>
   <path class="arrow" d="M282 203 H342"/>
