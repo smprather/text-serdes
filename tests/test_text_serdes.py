@@ -10,7 +10,6 @@ import base91
 import pytest
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
-from text_serdes import shoco
 from text_serdes.codec import CodecError, date_key, decrypt_text, encrypt_bytes
 
 
@@ -42,48 +41,6 @@ def test_zlib_payload_contains_compressed_bytes() -> None:
     compressed = _decrypt_zlib_payload(encoded)
 
     assert zlib.decompress(compressed) == plaintext
-
-
-def test_shoco_round_trips_binary_bytes() -> None:
-    plaintext = b"\x00TypeError: caf\xc3\xa9 value\xff\n"
-
-    compressed = shoco.compress(plaintext)
-
-    assert shoco.decompress(compressed) == plaintext
-
-
-def test_legacy_zlib_payload_still_decodes() -> None:
-    nonce = b"\x01" * 12
-    ciphertext = AESGCM(date_key(TODAY)).encrypt(nonce, zlib.compress(b"legacy bytes"), None)
-    encoded = base91.encode(b"DC1" + nonce + ciphertext)
-
-    assert decrypt_text(encoded, TODAY) == b"legacy bytes"
-
-
-def test_legacy_shoco_payload_still_decodes() -> None:
-    nonce = b"\x02" * 12
-    ciphertext = AESGCM(date_key(TODAY)).encrypt(nonce, shoco.compress(b"legacy shoco"), None)
-    encoded = base91.encode(b"DC2" + nonce + ciphertext)
-
-    assert decrypt_text(encoded, TODAY) == b"legacy shoco"
-
-
-def test_legacy_hybrid_zlib_payload_still_decodes() -> None:
-    nonce = b"\x03" * 12
-    compressed = b"Z" + zlib.compress(b"legacy hybrid zlib")
-    ciphertext = AESGCM(date_key(TODAY)).encrypt(nonce, compressed, None)
-    encoded = base91.encode(b"DC3" + nonce + ciphertext)
-
-    assert decrypt_text(encoded, TODAY) == b"legacy hybrid zlib"
-
-
-def test_legacy_hybrid_shoco_payload_still_decodes() -> None:
-    nonce = b"\x04" * 12
-    compressed = b"S" + shoco.compress(b"legacy hybrid shoco")
-    ciphertext = AESGCM(date_key(TODAY)).encrypt(nonce, compressed, None)
-    encoded = base91.encode(b"DC3" + nonce + ciphertext)
-
-    assert decrypt_text(encoded, TODAY) == b"legacy hybrid shoco"
 
 
 def test_wrong_date_fails() -> None:

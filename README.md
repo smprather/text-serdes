@@ -56,8 +56,6 @@ Current payloads use:
 - AES-GCM authentication tag
 - Base91 outer encoding
 
-Older `DC3` hybrid and `DC2` shoco payloads still decode, so same-day strings produced before compressor changes are not stranded.
-
 ![text-serdes encode and decode flow](docs/codec-flow.svg)
 
 ## Security Model
@@ -86,4 +84,3 @@ Useful files:
 
 - `src/text_serdes/cli.py`: CLI entry points.
 - `src/text_serdes/codec.py`: encode/decode pipeline.
-- `src/text_serdes/shoco.py`: legacy decoder support for older `DC2` and `DC3` payloads.
