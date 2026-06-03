@@ -52,11 +52,11 @@ When `enc` receives a filename, it embeds only that file's basename. When `dec` 
 
 Current payloads use:
 
-- `DC1` magic
-- random 12-byte AES-GCM nonce
-- zlib-compressed payload containing optional basename metadata and plaintext bytes
-- AES-GCM authentication tag
-- Base91 outer encoding
+- a `DC1` version marker
+- a random 12-byte value needed for encryption
+- encrypted zlib-compressed bytes
+- optional basename metadata when encoding a file
+- Base91 text output
 
 ![text-serdes encode and decode flow](docs/codec-flow.svg)
 
