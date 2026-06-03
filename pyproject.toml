@@ -26,7 +26,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["text_serdes"]
+packages = ["src/text_serdes"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

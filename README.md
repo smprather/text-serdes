@@ -12,6 +12,12 @@ It is built for short-lived engineering text: Python error messages, logs, paths
 uv sync
 ```
 
+Or install it as a `uv` tool from this checkout:
+
+```bash
+uv tool install .
+```
+
 ## Use
 
 Encode stdin:
@@ -44,13 +50,14 @@ Both commands use one optional positional file. With no file, they read stdin un
 
 Current payloads use:
 
-- `DC2` magic
+- `DC3` magic
 - random 12-byte AES-GCM nonce
-- shoco-compressed plaintext
+- one encrypted method byte: `S` for shoco or `Z` for zlib
+- the smaller of shoco-compressed or zlib-compressed plaintext
 - AES-GCM authentication tag
 - Base91 outer encoding
 
-Older `DC1` zlib payloads still decode, so same-day strings produced before the shoco switch are not stranded.
+Older `DC2` shoco and `DC1` zlib payloads still decode, so same-day strings produced before compressor changes are not stranded.
 
 ## Security Model
 
@@ -66,32 +73,39 @@ That means encoded output is intended to be decoded on the same local date. Anyo
 
 ## Compression
 
-The compressor is a pure-Python port of shoco, a small-string compressor originally written in C. In the local benchmark corpus, shoco beat zlib on 27 of 28 engineering-style samples:
+The encoder tries both shoco and zlib, then stores whichever result is smaller. Shoco is a pure-Python port of a small-string compressor originally written in C. In the local benchmark corpus, shoco beat zlib on short engineering strings, while zlib beat shoco on repetitive 1-2KB samples:
 
 ```text
-totals: raw=1696 zlib=1818 gzip=2154 shoco=1379
-total ratios: zlib=1.07x gzip=1.27x shoco=0.81x
-median ratios: zlib=1.10x shoco=0.80x
-wins vs current zlib: shoco=27 zlib=1 ties=0
+samples: 32
+totals: raw=7947 zlib=2789 gzip=3173 shoco=6572 best=2345
+total ratios: zlib=0.35x gzip=0.40x shoco=0.83x best=0.30x
+median ratios: zlib=1.08x shoco=0.81x best=0.79x
+wins vs current zlib: shoco=27 zlib=5 ties=0
 ```
 
 Representative rows:
 
-| sample kind | raw | zlib | gzip | shoco |
-| --- | ---: | ---: | ---: | ---: |
-| `TypeError: 'NoneType' object...` | 49 | 55 | 67 | 44 |
-| `ModuleNotFoundError: No module...` | 49 | 54 | 66 | 36 |
-| `ValueError: invalid literal...` | 57 | 64 | 76 | 44 |
-| traceback path | 80 | 76 | 88 | 59 |
-| JSON event | 85 | 81 | 93 | 69 |
-| YAML deployment fragment | 67 | 73 | 85 | 51 |
-| INI settings | 41 | 49 | 61 | 31 |
-| source path | 53 | 49 | 61 | 36 |
-| URL with query string | 73 | 76 | 88 | 55 |
-| shell command | 55 | 63 | 75 | 46 |
-| structured log line | 78 | 81 | 93 | 61 |
-| UUID | 36 | 43 | 55 | 36 |
-| SHA-256 digest | 71 | 65 | 77 | 70 |
+| sample kind | raw | zlib | gzip | shoco | best |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `TypeError: 'NoneType' object...` | 49 | 55 | 67 | 44 | 44 |
+| `ModuleNotFoundError: No module...` | 49 | 54 | 66 | 36 | 36 |
+| `ValueError: invalid literal...` | 57 | 64 | 76 | 44 | 44 |
+| traceback path | 84 | 80 | 92 | 63 | 63 |
+| JSON event | 85 | 81 | 93 | 69 | 69 |
+| YAML deployment fragment | 67 | 73 | 85 | 51 | 51 |
+| INI settings | 41 | 49 | 61 | 31 | 31 |
+| source path | 53 | 49 | 61 | 36 | 36 |
+| URL with query string | 73 | 76 | 88 | 55 | 55 |
+| shell command | 55 | 63 | 75 | 46 | 46 |
+| structured log line | 78 | 81 | 93 | 61 | 61 |
+| UUID | 36 | 43 | 55 | 36 | 36 |
+| SHA-256 digest | 71 | 65 | 77 | 70 | 65 |
+| repeated traceback block | 1131 | 187 | 199 | 867 | 187 |
+| repeated log block | 1764 | 267 | 279 | 1549 | 267 |
+| repeated JSON block | 1776 | 286 | 298 | 1461 | 286 |
+| repeated YAML block | 1576 | 227 | 239 | 1312 | 227 |
+
+Practical read: shoco is good for the short strings this tool mostly targets. If you paste a long repeated log/blob, zlib has a much better ratio, so the encoder now picks zlib for those cases.
 
 Run the comparison:
 
@@ -107,8 +121,8 @@ uv run pytest -q
 
 Useful files:
 
-- `text_serdes/cli.py`: CLI entry points.
-- `text_serdes/codec.py`: encode/decode pipeline.
-- `text_serdes/shoco.py`: pure-Python shoco implementation.
+- `src/text_serdes/cli.py`: CLI entry points.
+- `src/text_serdes/codec.py`: encode/decode pipeline.
+- `src/text_serdes/shoco.py`: pure-Python shoco implementation.
 - `scripts/compare_shoco.py`: compression comparison corpus.
 - `docs/pure-python-shoco-notes.md`: notes for publishing the shoco port as a standalone PyPI package.

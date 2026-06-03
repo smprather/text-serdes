@@ -25,27 +25,29 @@ It is not a general-purpose replacement for zlib on large or binary-heavy data. 
 
 Script: `scripts/compare_shoco.py`
 
-Corpus size: 28 hand-picked engineering-ish samples.
+Corpus size: 32 hand-picked engineering-ish samples, including 4 repeated 1-2KB samples.
 
 Result:
 
 ```text
-totals: raw=1696 zlib=1818 gzip=2154 shoco=1379
-total ratios: zlib=1.07x gzip=1.27x shoco=0.81x
-median ratios: zlib=1.10x shoco=0.80x
-wins vs current zlib: shoco=27 zlib=1 ties=0
+samples: 32
+totals: raw=7947 zlib=2789 gzip=3173 shoco=6572 best=2345
+total ratios: zlib=0.35x gzip=0.40x shoco=0.83x best=0.30x
+median ratios: zlib=1.08x shoco=0.81x best=0.79x
+wins vs current zlib: shoco=27 zlib=5 ties=0
 ```
 
 Meaning:
 
 - Current `zlib.compress()` often expands short strings because it has format overhead.
-- `gzip.compress()` expands even more because gzip has larger headers/trailers.
-- Shoco usually shrinks these short strings.
-- The one zlib win was a hash-like string where repeated hex helped zlib more than shoco's language model.
+- `gzip.compress()` expands even more on short strings because gzip has larger headers/trailers.
+- Shoco usually shrinks short engineering strings.
+- Zlib crushes long repeated 1-2KB blocks because dictionary compression can reuse whole repeated fragments.
+- The short-sample zlib win was a hash-like string where repeated hex helped zlib more than shoco's language model.
 
 ## Current pure-Python port
 
-File in this repo: `text_serdes/shoco.py`
+File in this repo: `src/text_serdes/shoco.py`
 
 Public API:
 
@@ -100,10 +102,11 @@ Decompression loop:
 
 `text_serdes.codec` now writes:
 
-- `DC2`: shoco-compressed payload, then AES-GCM, then Base91.
+- `DC3`: encrypted method byte plus whichever compressed payload is smaller: shoco or zlib.
 
 It still reads:
 
+- `DC3`: hybrid method-byte path.
 - `DC2`: shoco path.
 - `DC1`: legacy zlib path.
 
@@ -116,7 +119,7 @@ Current repo tests cover:
 - Fixed-date round trip.
 - Binary bytes with `NUL` and `0xff`.
 - Shoco direct round trip.
-- New payload magic starts with `DC2`.
+- New payload magic starts with `DC3`.
 - Old `DC1` zlib payload still decodes.
 - Wrong-date failure.
 - Malformed input failure.
