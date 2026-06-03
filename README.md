@@ -59,8 +59,10 @@ Current payloads use:
 
 Older `DC2` shoco and `DC1` zlib payloads still decode, so same-day strings produced before compressor changes are not stranded.
 
+Encode:
+
 ```mermaid
-flowchart TD
+flowchart LR
     A["input bytes"] --> B["compress with shoco"]
     A --> C["compress with zlib"]
     B --> D["pick smaller result"]
@@ -72,8 +74,10 @@ flowchart TD
     H --> I["copyable output text"]
 ```
 
+Decode:
+
 ```mermaid
-flowchart TD
+flowchart LR
     J["encoded input text"] --> K["Base91 decode"]
     K --> L["read magic, nonce, ciphertext"]
     L --> M["AES-GCM decrypt with date key"]
