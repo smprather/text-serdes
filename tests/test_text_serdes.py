@@ -27,29 +27,21 @@ def test_round_trip_with_fixed_date() -> None:
     assert decrypt_text(encoded, TODAY) == plaintext
 
 
-def test_encrypt_uses_hybrid_format() -> None:
+def test_encrypt_uses_zlib_format() -> None:
     encoded = encrypt_bytes(b"TypeError: invalid literal", TODAY)
 
     payload = bytes(base91.decode(encoded))
 
-    assert payload.startswith(b"DC3")
+    assert payload.startswith(b"DC1")
 
 
-def test_short_payload_uses_shoco_method() -> None:
+def test_zlib_payload_contains_compressed_bytes() -> None:
+    plaintext = b"TypeError: invalid literal"
     encoded = encrypt_bytes(b"TypeError: invalid literal", TODAY)
 
-    method, _compressed = _decrypt_payload(encoded)
+    compressed = _decrypt_zlib_payload(encoded)
 
-    assert method == b"S"
-
-
-def test_long_repeated_payload_uses_zlib_method() -> None:
-    plaintext = (b"2026-06-03T03:24:01.883Z ERROR api status=500 latency_ms=238\n" * 30)
-    encoded = encrypt_bytes(plaintext, TODAY)
-
-    method, _compressed = _decrypt_payload(encoded)
-
-    assert method == b"Z"
+    assert zlib.decompress(compressed) == plaintext
 
 
 def test_shoco_round_trips_binary_bytes() -> None:
@@ -74,6 +66,24 @@ def test_legacy_shoco_payload_still_decodes() -> None:
     encoded = base91.encode(b"DC2" + nonce + ciphertext)
 
     assert decrypt_text(encoded, TODAY) == b"legacy shoco"
+
+
+def test_legacy_hybrid_zlib_payload_still_decodes() -> None:
+    nonce = b"\x03" * 12
+    compressed = b"Z" + zlib.compress(b"legacy hybrid zlib")
+    ciphertext = AESGCM(date_key(TODAY)).encrypt(nonce, compressed, None)
+    encoded = base91.encode(b"DC3" + nonce + ciphertext)
+
+    assert decrypt_text(encoded, TODAY) == b"legacy hybrid zlib"
+
+
+def test_legacy_hybrid_shoco_payload_still_decodes() -> None:
+    nonce = b"\x04" * 12
+    compressed = b"S" + shoco.compress(b"legacy hybrid shoco")
+    ciphertext = AESGCM(date_key(TODAY)).encrypt(nonce, compressed, None)
+    encoded = base91.encode(b"DC3" + nonce + ciphertext)
+
+    assert decrypt_text(encoded, TODAY) == b"legacy hybrid shoco"
 
 
 def test_wrong_date_fails() -> None:
@@ -134,11 +144,10 @@ def test_cli_file_input(tmp_path: Path) -> None:
     assert decoded == b"file bytes\n"
 
 
-def _decrypt_payload(encoded: str) -> tuple[bytes, bytes]:
+def _decrypt_zlib_payload(encoded: str) -> bytes:
     payload = bytes(base91.decode(encoded))
-    assert payload.startswith(b"DC3")
+    assert payload.startswith(b"DC1")
     body = payload[3:]
     nonce = body[:12]
     ciphertext = body[12:]
-    compressed = AESGCM(date_key(TODAY)).decrypt(nonce, ciphertext, None)
-    return compressed[:1], compressed[1:]
+    return AESGCM(date_key(TODAY)).decrypt(nonce, ciphertext, None)
