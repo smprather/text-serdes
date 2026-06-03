@@ -46,13 +46,15 @@ uv run dec encoded.txt
 
 Both commands use one optional positional file. With no file, they read stdin until EOF. `enc` writes a newline-terminated encoded string. `dec` writes the original bytes to stdout.
 
+When `enc` receives a filename, it embeds only that file's basename. When `dec` sees an embedded filename, it writes the decoded bytes back to that basename in the current directory, overwriting any existing file.
+
 ## Format
 
 Current payloads use:
 
 - `DC1` magic
 - random 12-byte AES-GCM nonce
-- zlib-compressed plaintext
+- zlib-compressed payload containing optional basename metadata and plaintext bytes
 - AES-GCM authentication tag
 - Base91 outer encoding
 

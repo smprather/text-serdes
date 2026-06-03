@@ -10,7 +10,7 @@ import base91
 import pytest
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
-from text_serdes.codec import CodecError, date_key, decrypt_text, encrypt_bytes
+from text_serdes.codec import CodecError, date_key, decrypt_payload, decrypt_text, encrypt_bytes
 
 
 TODAY = date(2026, 6, 1)
@@ -38,9 +38,18 @@ def test_zlib_payload_contains_compressed_bytes() -> None:
     plaintext = b"TypeError: invalid literal"
     encoded = encrypt_bytes(b"TypeError: invalid literal", TODAY)
 
-    compressed = _decrypt_zlib_payload(encoded)
+    envelope = zlib.decompress(_decrypt_zlib_payload(encoded))
 
-    assert zlib.decompress(compressed) == plaintext
+    assert envelope == b"TS1\x00" + plaintext
+
+
+def test_file_payload_embeds_basename() -> None:
+    encoded = encrypt_bytes(b"file bytes\n", TODAY, filename="message.txt")
+
+    payload = decrypt_payload(encoded, TODAY)
+
+    assert payload.filename == "message.txt"
+    assert payload.data == b"file bytes\n"
 
 
 def test_wrong_date_fails() -> None:
@@ -90,15 +99,18 @@ def test_cli_file_input(tmp_path: Path) -> None:
         check=True,
     ).stdout
 
+    input_file.write_bytes(b"will be overwritten\n")
     decoded = subprocess.run(
-        ["uv", "run", "dec"],
+        [str(Path(sys.executable).parent / "dec")],
         input=encoded,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         check=True,
+        cwd=tmp_path,
     ).stdout
 
-    assert decoded == b"file bytes\n"
+    assert decoded == b""
+    assert input_file.read_bytes() == b"file bytes\n"
 
 
 def _decrypt_zlib_payload(encoded: str) -> bytes:
