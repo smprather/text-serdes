@@ -63,29 +63,29 @@ Encode:
 
 ```mermaid
 flowchart LR
-    A["input bytes"] --> B["compress with shoco"]
-    A --> C["compress with zlib"]
-    B --> D["pick smaller result"]
+    A["bytes"] --> B["shoco"]
+    A --> C["zlib"]
+    B --> D["min"]
     C --> D
-    D --> E["prepend encrypted method byte: S or Z"]
-    E --> F["AES-GCM encrypt with date key and random nonce"]
-    F --> G["prepend DC3 magic and nonce"]
-    G --> H["Base91 encode"]
-    H --> I["copyable output text"]
+    D --> E["S/Z"]
+    E --> F["AES-GCM"]
+    F --> G["DC3 + nonce"]
+    G --> H["Base91"]
+    H --> I["text"]
 ```
 
 Decode:
 
 ```mermaid
 flowchart LR
-    J["encoded input text"] --> K["Base91 decode"]
-    K --> L["read magic, nonce, ciphertext"]
-    L --> M["AES-GCM decrypt with date key"]
-    M --> N["read method byte"]
+    J["text"] --> K["Base91"]
+    K --> L["DC3 + nonce"]
+    L --> M["AES-GCM"]
+    M --> N["S/Z"]
     N --> O{"method"}
-    O -->|"S"| P["shoco decompress"]
-    O -->|"Z"| Q["zlib decompress"]
-    P --> R["original bytes"]
+    O -->|"S"| P["shoco"]
+    O -->|"Z"| Q["zlib"]
+    P --> R["bytes"]
     Q --> R
 ```
 
