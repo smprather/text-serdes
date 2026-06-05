@@ -80,6 +80,12 @@ def test_malformed_input_fails() -> None:
         decrypt_text("not valid for this tool", TODAY)
 
 
+def test_terminal_paste_sequences_are_ignored() -> None:
+    encoded = encrypt_bytes(b"pasted through terminal", TODAY)
+
+    assert decrypt_text(f"\x1b[200~{encoded}\x1b[201~", TODAY) == b"pasted through terminal"
+
+
 def test_cli_round_trip_from_stdin() -> None:
     plaintext = b"from stdin\nwith newline\n"
     encoded = subprocess.run(

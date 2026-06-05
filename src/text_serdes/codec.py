@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base91
+import re
 import zlib
 from dataclasses import dataclass
 from datetime import date
@@ -16,6 +17,8 @@ RAW_FILE_MAGIC = b"FR1"
 ZLIB_FILE_MAGIC = b"FZ1"
 MAX_FILENAME_SIZE = 4096
 NONCE_SIZE = 12
+CSI_SEQUENCE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
+OSC_SEQUENCE = re.compile(r"\x1b\].*?(?:\x07|\x1b\\)", re.DOTALL)
 
 
 class CodecError(ValueError):
@@ -51,7 +54,7 @@ def decrypt_text(encoded: str, day: date | None = None) -> bytes:
 
 def decrypt_payload(encoded: str, day: date | None = None) -> DecodedPayload:
     try:
-        payload = bytes(base91.decode(encoded.strip()))
+        payload = bytes(base91.decode(_strip_terminal_sequences(encoded).strip()))
     except Exception as exc:
         raise CodecError("input is not valid Base91") from exc
 
@@ -81,6 +84,10 @@ def _decompress_zlib(compressed: bytes) -> bytes:
         return zlib.decompress(compressed)
     except zlib.error as exc:
         raise CodecError("decompressed payload is invalid") from exc
+
+
+def _strip_terminal_sequences(text: str) -> str:
+    return CSI_SEQUENCE.sub("", OSC_SEQUENCE.sub("", text))
 
 
 def _magic_for(has_filename: bool, compressed: bool) -> bytes:
