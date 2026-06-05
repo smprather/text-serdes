@@ -26,21 +26,30 @@ def test_round_trip_with_fixed_date() -> None:
     assert decrypt_text(encoded, TODAY) == plaintext
 
 
-def test_encrypt_uses_zlib_format() -> None:
+def test_short_stdin_payload_uses_raw_format() -> None:
     encoded = encrypt_bytes(b"TypeError: invalid literal", TODAY)
 
     payload = bytes(base91.decode(encoded))
 
-    assert payload.startswith(b"DC1")
+    assert payload.startswith(b"DR1")
 
 
-def test_zlib_payload_contains_compressed_bytes() -> None:
+def test_short_stdin_payload_contains_raw_bytes() -> None:
     plaintext = b"TypeError: invalid literal"
     encoded = encrypt_bytes(b"TypeError: invalid literal", TODAY)
 
-    envelope = zlib.decompress(_decrypt_zlib_payload(encoded))
+    payload = _decrypt_payload_bytes(encoded)
 
-    assert envelope == b"TS1\x00" + plaintext
+    assert payload == plaintext
+
+
+def test_repeated_stdin_payload_uses_zlib_format() -> None:
+    plaintext = b"TypeError: invalid literal\n" * 50
+    encoded = encrypt_bytes(plaintext, TODAY)
+    payload = bytes(base91.decode(encoded))
+
+    assert payload.startswith(b"DZ1")
+    assert zlib.decompress(_decrypt_payload_bytes(encoded)) == plaintext
 
 
 def test_file_payload_embeds_basename() -> None:
@@ -50,6 +59,13 @@ def test_file_payload_embeds_basename() -> None:
 
     assert payload.filename == "message.txt"
     assert payload.data == b"file bytes\n"
+
+
+def test_file_payload_uses_file_format() -> None:
+    encoded = encrypt_bytes(b"file bytes\n", TODAY, filename="message.txt")
+    payload = bytes(base91.decode(encoded))
+
+    assert payload.startswith(b"FR1")
 
 
 def test_wrong_date_fails() -> None:
@@ -113,10 +129,10 @@ def test_cli_file_input(tmp_path: Path) -> None:
     assert input_file.read_bytes() == b"file bytes\n"
 
 
-def _decrypt_zlib_payload(encoded: str) -> bytes:
+def _decrypt_payload_bytes(encoded: str) -> bytes:
     payload = bytes(base91.decode(encoded))
-    assert payload.startswith(b"DC1")
+    magic = payload[:3]
     body = payload[3:]
     nonce = body[:12]
     ciphertext = body[12:]
-    return AESGCM(date_key(TODAY)).decrypt(nonce, ciphertext, None)
+    return AESGCM(date_key(TODAY)).decrypt(nonce, ciphertext, magic)

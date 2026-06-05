@@ -2,7 +2,7 @@
 
 Tiny daily-key text transport for copy/paste workflows.
 
-`text-serdes` takes bytes from a file or stdin, compresses them with zlib, encrypts them with an AES-GCM key derived from today's local date, Base91-encodes the result, and prints one copyable line.
+`text-serdes` takes bytes from a file or stdin, compresses them with zlib only when that helps, encrypts them with an AES-GCM key derived from today's local date, Base91-encodes the result, and prints one copyable line.
 
 It is built for short-lived engineering text: Python error messages, logs, paths, JSON/YAML/TOML fragments, shell commands, tracebacks, and other structured text that does not behave like long prose.
 
@@ -52,9 +52,9 @@ When `enc` receives a filename, it embeds only that file's basename. When `dec` 
 
 Current payloads use:
 
-- a `DC1` version marker
+- a small marker for stdin/file and raw/zlib
 - a random 12-byte value needed for encryption
-- encrypted zlib-compressed bytes
+- encrypted raw or zlib-compressed bytes
 - optional basename metadata when encoding a file
 - Base91 text output
 
@@ -74,7 +74,7 @@ That means encoded output is intended to be decoded on the same local date. Anyo
 
 ## Compression
 
-The encoder uses `zlib.compress()`. It is simple, standard-library, good enough on short strings, and noticeably better on longer repeated logs or structured blobs.
+The encoder tries `zlib.compress()`. If zlib makes the payload smaller, it stores compressed bytes. If zlib would make the payload longer, it encrypts the raw bytes instead.
 
 ## Develop
 
