@@ -1,10 +1,8 @@
 # text-serdes
 
-Tiny daily-key text transport for copy/paste workflows.
+Tiny daily-key text transport for copy/paste sites, like PasteBin and Cl1p.net.
 
-`text-serdes` takes bytes from a file or stdin, compresses them with zlib only when that helps, encrypts them with an AES-GCM key derived from today's local date, Base91-encodes the result, and prints one copyable line.
-
-It is built for short-lived engineering text: Python error messages, logs, paths, JSON/YAML/TOML fragments, shell commands, tracebacks, and other structured text that does not behave like long prose.
+`text-serdes` takes bytes from a file or stdin, compresses them, but only if it helps, encrypts, encodes with Base91, and prints one copyable line.
 
 ## Install
 
