@@ -1,6 +1,6 @@
 # text-serdes
 
-Tiny daily-key text transport for copy/paste sites, like PasteBin and Cl1p.net.
+Tiny self-contained text transport for copy/paste sites, like PasteBin and Cl1p.net.
 
 `text-serdes` takes bytes from a file or stdin, compresses them, but only if it helps, encrypts, encodes with Base91, and prints one copyable line.
 
@@ -60,15 +60,21 @@ Current payloads use:
 
 ## Security Model
 
-This is not long-term secure storage.
+This is not secure storage, and it is not trying to be.
 
-The encryption key is:
+By default each encoded line is self-contained: the key material needed to decode it is carried inside the line itself, in an obfuscated form, combined with a fixed component baked into this tool. There is no date window — any copy of `text-serdes` can decode any line it produced. (The optional passphrase below changes this.)
 
-```text
-sha256(local-date-as-YYYY-MM-DD)
+The only thing this buys you is that the output does not read as plaintext to casual eyes glancing at a terminal, a chat log, or a paste. Anyone willing to read this source, or to point a capable tool at the encoded line, can recover the contents. Use it for short-lived transport convenience, not for anything that needs real key management.
+
+### Optional passphrase
+
+Set the `TS_KEY` environment variable to fold a passphrase into the key. When set, it must match on both `enc` and `dec`:
+
+```bash
+TS_KEY=swordfish uv run enc message.txt | TS_KEY=swordfish uv run dec
 ```
 
-That means encoded output is intended to be decoded on the same local date. Anyone who knows the date can derive the key. Use this for short-lived transport convenience, not secrets that need real key management.
+This moves a secret out of the source entirely, so the encoded line cannot be decoded without it. `TS_KEY` is optional: leave it unset and the tool behaves as above (self-contained, obfuscation only). Lines encoded with a given `TS_KEY` only decode with that same value.
 
 ## Compression
 

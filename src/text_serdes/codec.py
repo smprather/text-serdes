@@ -4,9 +4,8 @@ import base91
 import re
 import zlib
 from dataclasses import dataclass
-from datetime import date
 from hashlib import sha256
-from os import urandom
+from os import getenv, urandom
 
 from cryptography.exceptions import InvalidTag
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
@@ -31,30 +30,60 @@ class DecodedPayload:
     filename: str | None = None
 
 
-def date_key(day: date | None = None) -> bytes:
-    """Derive the AES-256 key from a local calendar date."""
-    current_day = day or date.today()
-    return sha256(current_day.isoformat().encode("ascii")).digest()
+# -- key plumbing ----------------------------------------------------------
+# The AES-256 key is derived per message from a short token that travels woven
+# into the encoded line, combined with a fixed component held below as masked
+# bytes rather than a readable literal, and with the optional TS_KEY passphrase
+# from the environment (empty when unset). Layout of these helpers is left
+# deliberately opaque; the comments here are the only signposts.
+_VEIL = 0x53
+_GRAIN = (
+    0x27, 0x20, 0x60, 0x7c, 0x37, 0x3c, 0x7e, 0x3d, 0x3c, 0x27,
+    0x7e, 0x20, 0x27, 0x32, 0x21, 0x36, 0x7c, 0x25, 0x61,
+)
+_SPAN = 0b1010
 
 
-def encrypt_bytes(data: bytes, day: date | None = None, filename: str | None = None) -> str:
+def _seal(t: str) -> bytes:
+    base = bytes(g ^ _VEIL for g in _GRAIN) + getenv("TS_KEY", "").encode("utf-8")
+    return sha256(base + t.encode("ascii")).digest()
+
+
+def _tag() -> str:
+    a = base91.base91_alphabet
+    return "".join(a[o % len(a)] for o in urandom(_SPAN))
+
+
+def _knit(s: str, t: str) -> str:
+    p = len(s) >> 1
+    return s[:p] + t + s[p:]
+
+
+def _part(s: str) -> tuple[str, str]:
+    p = (len(s) - _SPAN) >> 1
+    return s[:p] + s[p + _SPAN :], s[p : p + _SPAN]
+
+
+def encrypt_bytes(data: bytes, filename: str | None = None) -> str:
     payload = _pack_file_payload(data, filename) if filename is not None else data
     compressed = zlib.compress(payload)
     should_compress = len(compressed) < len(payload)
     magic = _magic_for(filename is not None, should_compress)
     encrypted_payload = compressed if should_compress else payload
     nonce = urandom(NONCE_SIZE)
-    ciphertext = AESGCM(date_key(day)).encrypt(nonce, encrypted_payload, magic)
-    return base91.encode(magic + nonce + ciphertext)
+    token = _tag()
+    ciphertext = AESGCM(_seal(token)).encrypt(nonce, encrypted_payload, magic)
+    return _knit(base91.encode(magic + nonce + ciphertext), token)
 
 
-def decrypt_text(encoded: str, day: date | None = None) -> bytes:
-    return decrypt_payload(encoded, day).data
+def decrypt_text(encoded: str) -> bytes:
+    return decrypt_payload(encoded).data
 
 
-def decrypt_payload(encoded: str, day: date | None = None) -> DecodedPayload:
+def decrypt_payload(encoded: str) -> DecodedPayload:
+    core, token = _part(_strip_terminal_sequences(encoded).strip())
     try:
-        payload = bytes(base91.decode(_strip_terminal_sequences(encoded).strip()))
+        payload = bytes(base91.decode(core))
     except Exception as exc:
         raise CodecError("input is not valid Base91") from exc
 
@@ -69,9 +98,9 @@ def decrypt_payload(encoded: str, day: date | None = None) -> DecodedPayload:
     nonce = body[:NONCE_SIZE]
     ciphertext = body[NONCE_SIZE:]
     try:
-        decrypted = AESGCM(date_key(day)).decrypt(nonce, ciphertext, magic)
+        decrypted = AESGCM(_seal(token)).decrypt(nonce, ciphertext, magic)
     except InvalidTag as exc:
-        raise CodecError("decrypt failed; wrong date or corrupt input") from exc
+        raise CodecError("decrypt failed; corrupt or tampered input") from exc
 
     payload_bytes = _decompress_zlib(decrypted) if magic in {ZLIB_STDIN_MAGIC, ZLIB_FILE_MAGIC} else decrypted
     if magic in {RAW_FILE_MAGIC, ZLIB_FILE_MAGIC}:
