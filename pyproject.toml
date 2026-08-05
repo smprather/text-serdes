@@ -12,8 +12,8 @@ dependencies = [
 ]
 
 [project.scripts]
-enc = "text_serdes.cli:enc_main"
-dec = "text_serdes.cli:dec_main"
+text-serdes-enc = "text_serdes.cli:enc_main"
+text-serdes-dec = "text_serdes.cli:dec_main"
 
 [dependency-groups]
 dev = [

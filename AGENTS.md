@@ -7,8 +7,8 @@ This is a small Python CLI project. Runtime code lives in `src/text_serdes/`, wi
 ## Build, Test, and Development Commands
 
 - `uv sync`: create or update the local virtual environment.
-- `uv run enc [input_file]`: compress, encrypt with today's date key, Base91 encode, and print to stdout.
-- `uv run dec [input_file]`: Base91 decode, decrypt with today's date key, decompress, and print plaintext.
+- `uv run text-serdes-enc [input_file]`: compress, encrypt with today's date key, Base91 encode, and print to stdout.
+- `uv run text-serdes-dec [input_file]`: Base91 decode, decrypt with today's date key, decompress, and print plaintext.
 - `uv run pytest -q`: run the root test suite.
 
 Commands should be run from the repository root, `/home/mylesp/text-serdes`.

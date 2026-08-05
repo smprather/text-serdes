@@ -141,7 +141,7 @@ def test_whitespace_damage_is_ignored() -> None:
 def test_noisy_paste_can_still_be_decoded() -> None:
     encoded = encrypt_bytes(b"noise around the payload")
     noisy = (
-        "❯ uv run enc\n"
+        "❯ uv run text-serdes-enc\n"
         " some transcript before\n"
         f"  {encoded[:18]}\n"
         f"{encoded[18:52]}\n"
@@ -166,7 +166,7 @@ def test_cli_round_trip_from_stdin() -> None:
     assert b"\n" not in encoded[:-1]
 
     decoded = subprocess.run(
-        ["uv", "run", "dec"],
+        ["uv", "run", "text-serdes-dec"],
         input=encoded,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -180,7 +180,7 @@ def test_cli_wraps_long_encoded_output() -> None:
     plaintext = b"".join(sha256(i.to_bytes(2, "big")).digest() for i in range(128))
 
     encoded = subprocess.run(
-        ["uv", "run", "enc"],
+        ["uv", "run", "text-serdes-enc"],
         input=plaintext,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -192,7 +192,7 @@ def test_cli_wraps_long_encoded_output() -> None:
     assert max(len(line) for line in lines) <= 100
 
     decoded = subprocess.run(
-        ["uv", "run", "dec"],
+        ["uv", "run", "text-serdes-dec"],
         input=encoded,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -207,7 +207,7 @@ def test_cli_file_input(tmp_path: Path) -> None:
     input_file.write_bytes(b"file bytes\n")
 
     encoded = subprocess.run(
-        ["uv", "run", "enc", str(input_file)],
+        ["uv", "run", "text-serdes-enc", str(input_file)],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         check=True,
@@ -215,7 +215,7 @@ def test_cli_file_input(tmp_path: Path) -> None:
 
     input_file.write_bytes(b"will be overwritten\n")
     decoded = subprocess.run(
-        [str(Path(sys.executable).parent / "dec")],
+        [str(Path(sys.executable).parent / "text-serdes-dec")],
         input=encoded,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -232,7 +232,7 @@ def test_cli_output_file_overrides_embedded_filename(tmp_path: Path) -> None:
     input_file.write_bytes(b"payload with file name")
 
     encoded = subprocess.run(
-        ["uv", "run", "enc", str(input_file)],
+        ["uv", "run", "text-serdes-enc", str(input_file)],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         check=True,
@@ -240,7 +240,7 @@ def test_cli_output_file_overrides_embedded_filename(tmp_path: Path) -> None:
 
     output_file = tmp_path / "forced.txt"
     subprocess.run(
-        ["uv", "run", "dec", "--output", str(output_file)],
+        ["uv", "run", "text-serdes-dec", "--output", str(output_file)],
         input=encoded,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -252,7 +252,7 @@ def test_cli_output_file_overrides_embedded_filename(tmp_path: Path) -> None:
 
 def test_cli_output_directory_requires_embedded_filename(tmp_path: Path) -> None:
     encoded = subprocess.run(
-        [str(Path(sys.executable).parent / "enc")],
+        [str(Path(sys.executable).parent / "text-serdes-enc")],
         input=b"plain stdin payload",
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -260,7 +260,7 @@ def test_cli_output_directory_requires_embedded_filename(tmp_path: Path) -> None
     ).stdout
 
     result = subprocess.run(
-        ["uv", "run", "dec", "--output", str(tmp_path)],
+        ["uv", "run", "text-serdes-dec", "--output", str(tmp_path)],
         input=encoded,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -276,7 +276,7 @@ def test_cli_output_directory_uses_embedded_filename(tmp_path: Path) -> None:
     input_file.write_bytes(b"directory target")
 
     encoded = subprocess.run(
-        ["uv", "run", "enc", str(input_file)],
+        ["uv", "run", "text-serdes-enc", str(input_file)],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         check=True,
@@ -285,7 +285,7 @@ def test_cli_output_directory_uses_embedded_filename(tmp_path: Path) -> None:
     output_dir = tmp_path / "out"
     output_dir.mkdir()
     subprocess.run(
-        ["uv", "run", "dec", "--output", str(output_dir)],
+        ["uv", "run", "text-serdes-dec", "--output", str(output_dir)],
         input=encoded,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -302,7 +302,7 @@ def test_cli_dev_logs_encode_and_decode(tmp_path: Path) -> None:
     input_file.write_bytes(b"dev log payload")
 
     encoded = subprocess.run(
-        ["uv", "run", "enc", "--dev", str(input_file)],
+        ["uv", "run", "text-serdes-enc", "--dev", str(input_file)],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         check=True,
@@ -321,7 +321,7 @@ def test_cli_dev_logs_encode_and_decode(tmp_path: Path) -> None:
     output_dir = tmp_path / "out"
     output_dir.mkdir()
     subprocess.run(
-        ["uv", "run", "dec", "--dev", "--output", str(output_dir)],
+        ["uv", "run", "text-serdes-dec", "--dev", "--output", str(output_dir)],
         input=encoded,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -343,7 +343,7 @@ def test_cli_dev_logs_decode_failure(tmp_path: Path) -> None:
     encoded = encrypt_bytes(b"will be truncated").encode("ascii")
 
     result = subprocess.run(
-        ["uv", "run", "dec", "--dev"],
+        ["uv", "run", "text-serdes-dec", "--dev"],
         input=encoded[:-8] + b"\n",
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,

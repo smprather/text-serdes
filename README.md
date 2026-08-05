@@ -21,30 +21,30 @@ uv tool install .
 Encode stdin:
 
 ```bash
-printf 'TypeError: invalid literal for int()' | uv run enc
+printf 'TypeError: invalid literal for int()' | uv run text-serdes-enc
 ```
 
 Decode stdin:
 
 ```bash
-uv run enc message.txt | uv run dec
+uv run text-serdes-enc message.txt | uv run text-serdes-dec
 ```
 
 Encode a file:
 
 ```bash
-uv run enc message.txt
+uv run text-serdes-enc message.txt
 ```
 
 Decode a file containing encoded text:
 
 ```bash
-uv run dec encoded.txt
+uv run text-serdes-dec encoded.txt
 ```
 
-Both commands use one optional positional file. With no file, they read stdin until EOF. `enc` writes one logical encoded payload wrapped across short physical lines for terminal paste. `dec` ignores whitespace in encoded input and writes the original bytes to stdout.
+Both commands use one optional positional file. With no file, they read stdin until EOF. `text-serdes-enc` writes one logical encoded payload wrapped across short physical lines for terminal paste. `text-serdes-dec` ignores whitespace in encoded input and writes the original bytes to stdout.
 
-When `enc` receives a filename, it embeds only that file's basename. When `dec` sees an embedded filename, it writes the decoded bytes back to that basename in the current directory, overwriting any existing file.
+When `text-serdes-enc` receives a filename, it embeds only that file's basename. When `text-serdes-dec` sees an embedded filename, it writes the decoded bytes back to that basename in the current directory, overwriting any existing file.
 
 ## Format
 
@@ -68,10 +68,10 @@ The only thing this buys you is that the output does not read as plaintext to ca
 
 ### Optional passphrase
 
-Set the `TS_KEY` environment variable to fold a passphrase into the key. When set, it must match on both `enc` and `dec`:
+Set the `TS_KEY` environment variable to fold a passphrase into the key. When set, it must match on both `text-serdes-enc` and `text-serdes-dec`:
 
 ```bash
-TS_KEY=swordfish uv run enc message.txt | TS_KEY=swordfish uv run dec
+TS_KEY=swordfish uv run text-serdes-enc message.txt | TS_KEY=swordfish uv run text-serdes-dec
 ```
 
 This moves a secret out of the source entirely, so the encoded payload cannot be decoded without it. `TS_KEY` is optional: leave it unset and the tool behaves as above (self-contained, obfuscation only). Payloads encoded with a given `TS_KEY` only decode with that same value.
